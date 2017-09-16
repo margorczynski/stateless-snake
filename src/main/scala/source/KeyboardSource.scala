@@ -18,18 +18,22 @@ object KeyboardSource {
       case object Escape extends ModifierKey { val asciiCode = 27 }
 
 
-  def getKeyboardSource: Source[Key, NotUsed] = {
+  def getKeyboardSource: Source[Option[Key], NotUsed] = {
     val consoleReader = new BufferedReader(new InputStreamReader(System.in, "UTF-8"))
 
+    def currentlyPressedKey = if(consoleReader.ready()) Some(consoleReader.read()) else None
+
     Source.fromIterator( () =>
-      Iterator.continually(consoleReader.read())
-    ).map {
-      case KeyW.asciiCode   => KeyW
-      case KeyS.asciiCode   => KeyS
-      case KeyA.asciiCode   => KeyA
-      case KeyD.asciiCode   => KeyD
-      case Space.asciiCode  => Space
-      case Escape.asciiCode => Escape
-    }
+      Iterator.continually(currentlyPressedKey.map(getKey))
+    )
+  }
+
+  private def getKey(asciiCode: Int) = asciiCode match {
+    case KeyW.asciiCode   => KeyW
+    case KeyS.asciiCode   => KeyS
+    case KeyA.asciiCode   => KeyA
+    case KeyD.asciiCode   => KeyD
+    case Space.asciiCode  => Space
+    case Escape.asciiCode => Escape
   }
 }

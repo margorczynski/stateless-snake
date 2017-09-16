@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import source.{ClockSource, KeyboardSource}
-import scala.concurrent.duration._
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -15,8 +14,10 @@ object Main {
 
     val clockSource = ClockSource.getClockSource
 
-    //keyboardSource.runWith(Sink.foreach(println))
-    clockSource.runWith(Sink.foreach(println))
+    val aa = clockSource.zip(keyboardSource).map { case (_, key) => key }
 
+    val sink = Sink.foreach(println)
+
+    aa.runWith(sink)
   }
 }

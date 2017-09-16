@@ -11,5 +11,5 @@ object ClockSource {
     internalClockSource
   }
 
-  private val internalClockSource = Source.repeat(()).throttle(1, 1 millis, 1, ThrottleMode.shaping)
+  private val internalClockSource = Source.repeat(()).throttle(1, 1 second, 1, ThrottleMode.shaping)
 }
