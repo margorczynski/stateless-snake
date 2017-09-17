@@ -7,69 +7,76 @@ import scala.util.Random
 
 object GameStateEngine {
 
-  def calculate(initialSeed: Long, keyPressed: Option[Key], previousGameState: GameState) = previousGameState match {
+  def calculate(keyPressed: Option[Key], previousGameState: GameState) = previousGameState match {
     case Exited        => Exited
     case Paused(state) => keyPressed map {
       case Space  => state
       case Escape => Exited
     }
-    case Running(foodPosition, snake, seed, mapSize) => keyPressed map {
-      case Space        => Paused(Running(foodPosition, snake, seed, mapSize))
+    case Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize) => keyPressed map {
+      case Space        => Paused(Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize))
       case Escape       => Exited
       case directionKey =>
-        val snakePosition   = snake.positionsWithDirections.map(_._1)
-        val snakeDirections = snake.positionsWithDirections.map(_._2)
-        if(ateItself(snakePosition)) {
+        if(ateItself(segmentPositions)) {
           Exited
         } else {
-          val newSeed      = seed / 2
-          val newSnakeDirection = getNewDirection(snakeDirections.head, directionKey)
-          val newSnakePosition =  {
-            val afterEating = getSnakeAfterEating(foodPosition, snake)
+          val newSeed      = (seed * 2) % 123456
+          val newDirection = getNewDirection(direction, directionKey)
+          val newSegmentPositions =  {
+            val afterEating       = getSnakePositionsAfterEating(foodPosition, segmentPositions)
+            val snakeHeadPosition = segmentPositions.head
 
-            //TODO: Move the snake and change directions with fold?
-            afterEating.positionsWithDirections.reduceRight((left, right) => )
+            val newHeadPosition = direction match {
+              case Up    => Position(snakeHeadPosition.x, snakeHeadPosition.y - 1)
+              case Down  => Position(snakeHeadPosition.x, snakeHeadPosition.y + 1)
+              case Left  => Position(snakeHeadPosition.x - 1, snakeHeadPosition.y)
+              case Right => Position(snakeHeadPosition.x + 1, snakeHeadPosition.y)
+            }
+
+            (newHeadPosition +: afterEating).init
           }
-          val newFoodPosition = if(ateFood(foodPosition, snakePosition)) {
-            getFirstViableFoodPosition(snake, seed, mapSize)
+          val newFoodPosition = if(ateFood(foodPosition, segmentPositions)) {
+            getFirstViableFoodPosition(segmentPositions, seed, mapSize)
           } else foodPosition
 
-          //TODO: Return the new Running game state (with a new seed)
-          Running(newFoodPosition, newSnake, newSeed, mapSize)
+          Running(newFoodPosition, Snake(newSegmentPositions, newDirection), newSeed, mapSize)
         }
     }
   }
 
   //TODO: Can be remade if we encode which Direction type is the opposite of which and mapping
   private def getNewDirection(currentDirection: Direction, keyPressed: Key): Direction = keyPressed match {
-    case KeyW => if (currentDirection != Down) Up
-    case KeyS => if (currentDirection != Up) Down
-    case KeyA => if (currentDirection != Right) Left
-    case KeyD => if (currentDirection != Left) Right
+    case KeyW => currentDirection match {
+      case Down => Down
+      case _    => Up
+    }
+    case KeyS => currentDirection match {
+      case Up => Up
+      case _  => Down
+    }
+    case KeyA => currentDirection match {
+      case Right => Right
+      case _     => Left
+    }
+    case KeyD => currentDirection match {
+      case Left => Left
+      case _    => Right
+    }
     case _    => currentDirection
   }
 
-  private def getPositionWithDirectionOfNewPiece(snake: Snake) = snake.positionsWithDirections.last match {
-    case (position, Up)    => (Position(position.x, position.y + 1), Up)
-    case (position, Down)  => (Position(position.x, position.y - 1), Down)
-    case (position, Left)  => (Position(position.x + 1, position.y), Left)
-    case (position, Right) => (Position(position.x - 1, position.y), Right)
+  private def getSnakePositionsAfterEating(foodPosition: Position, segmentPositions: Seq[Position]): Seq[Position] = {
+    if(ateFood(foodPosition, segmentPositions)) {
+      segmentPositions :+ Position()
+    } else segmentPositions
   }
 
-  private def getSnakeAfterEating(foodPosition: Position, snake: Snake): Snake = {
-    val positions = snake.positionsWithDirections.map(_._1)
-
-    if(ateFood(foodPosition, positions)) {
-      Snake(snake.positionsWithDirections :+ getPositionWithDirectionOfNewPiece(snake))
-    } else snake
-  }
-
-  private def getFirstViableFoodPosition(snake: Snake, seed: Long, mapSize: Int): Position = {
+  private def getFirstViableFoodPosition(segmentPositions: Seq[Position], seed: Long, mapSize: Int): Position = {
     val generator   = new Random(seed)
     val newPosition = Position(generator.nextInt(mapSize), generator.nextInt(mapSize))
 
-    if(snake.positionsWithDirections.map(_._1).contains(newPosition))
-      getFirstViableFoodPosition(snake, seed / 2, mapSize)
+    if(segmentPositions.contains(newPosition))
+      getFirstViableFoodPosition(segmentPositions, seed / 2, mapSize)
     else
       newPosition
   }

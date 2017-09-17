@@ -1,8 +1,12 @@
 import java.io.{BufferedReader, InputStreamReader}
 
+import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
+import akka.stream.{ActorMaterializer, ClosedShape}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, RunnableGraph, Sink, Source, Zip}
+import logic.GameState
+import sink.GameStateSink
+import source.KeyboardSource.Key
 import source.{ClockSource, KeyboardSource}
 
 object Main {
@@ -10,14 +14,28 @@ object Main {
     implicit val actorSystem  = ActorSystem("stateless-snake-actor-system")
     implicit val materializer = ActorMaterializer()
 
-    val keyboardSource = KeyboardSource.getKeyboardSource
+    val gameGraph = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
+      import GraphDSL.Implicits._
 
-    val clockSource = ClockSource.getClockSource
+      val keyboardSource         = KeyboardSource.getKeyboardSource
+      val clockSource            = ClockSource.getClockSource
+      //TODO: This probably should be merged with the output of the GameStateFlow
+      val initialGameStateSource = Source.single(GameState())
 
-    val aa = clockSource.zip(keyboardSource).map { case (_, key) => key }
+      val gameStateSink = GameStateSink.getGameStateSink
 
-    val sink = Sink.foreach(println)
+      val mapToKeyFlow = Flow[(Unit, Option[Key])].map { case (_, key) => key }
 
-    aa.runWith(sink)
+      val synchronizationZip = builder.add(Zip[Unit, Option[Key]]())
+
+      clockSource    ~> synchronizationZip.in0
+      keyboardSource ~> synchronizationZip.in1
+
+      synchronizationZip.out ~> mapToKeyFlow ~> gameStateSink
+
+      ClosedShape
+    })
+
+    gameGraph.run()
   }
 }

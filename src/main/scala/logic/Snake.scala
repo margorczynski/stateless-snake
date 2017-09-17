@@ -1,9 +1,3 @@
 package logic
 
-import logic.Snake.PositionWithDirection
-
-case class Snake(positionsWithDirections: Seq[PositionWithDirection])
-
-object Snake {
-  type PositionWithDirection = (Position, Direction)
-}
+case class Snake(segmentPositions: Seq[Position], direction: Direction)
