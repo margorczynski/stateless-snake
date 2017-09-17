@@ -1,5 +1,6 @@
 package flow
 
+import akka.NotUsed
 import akka.stream.scaladsl.Flow
 import logic.{GameState, GameStateEngine}
 import source.KeyboardSource.Key
@@ -7,7 +8,7 @@ import source.KeyboardSource.Key
 object GameFlow {
   type GameFlowInput = (Option[Key], GameState)
 
-  def getGameFlow = {
+  def getGameFlow: Flow[(Option[Key], GameState), GameState, NotUsed] = {
     Flow.fromFunction(flowCalculate)
   }
 

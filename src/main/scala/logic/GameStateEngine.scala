@@ -9,19 +9,25 @@ object GameStateEngine {
 
   def calculate(keyPressed: Option[Key], previousGameState: GameState) = previousGameState match {
     case Exited        => Exited
-    case Paused(state) => keyPressed map {
-      case Space  => state
-      case Escape => Exited
+    case Paused(state) => keyPressed match {
+      case Some(key) => key match {
+        case Space  => state
+        case Escape => Exited
+      }
+      case None => previousGameState
     }
-    case Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize) => keyPressed map {
-      case Space        => Paused(Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize))
-      case Escape       => Exited
-      case directionKey =>
-        if(ateItself(segmentPositions)) {
+    case Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize) => keyPressed match {
+      case Some(Space)        => Paused(Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize))
+      case Some(Escape)       => Exited
+      case directionKeyOption =>
+        if(ateItself(segmentPositions) || isOutOfBound(mapSize, segmentPositions)) {
           Exited
         } else {
-          val newSeed      = (seed * 2) % 123456
-          val newDirection = getNewDirection(direction, directionKey)
+          val newSeed      = generateNewSeed(seed)
+          val newDirection = directionKeyOption match {
+            case Some(directionKey) => getNewDirection(direction, directionKey)
+            case None               => direction
+          }
           val newSegmentPositions =  {
             val afterEating       = getSnakePositionsAfterEating(foodPosition, segmentPositions)
             val snakeHeadPosition = segmentPositions.head
@@ -81,7 +87,17 @@ object GameStateEngine {
       newPosition
   }
 
-  private def ateFood(foodPosition: Position, snakePosition: Seq[Position]) = foodPosition == snakePosition.head
+  private def isOutOfBound(mapSize: Int, segmentPositions: Seq[Position]) =
+    segmentPositions.head.x < 0 ||
+    segmentPositions.head.x >= mapSize ||
+    segmentPositions.head.y < 0 ||
+    segmentPositions.head.y >= mapSize
+
+  private def ateFood(foodPosition: Position, segmentPositions: Seq[Position]) = foodPosition == segmentPositions.head
 
   private def ateItself(snakePosition: Seq[Position]) = snakePosition.tail.contains(snakePosition.head)
+
+  private def generateNewSeed(oldSeed: Long) = (oldSeed * 2) % seedBound
+
+  private val seedBound = 12345L
 }

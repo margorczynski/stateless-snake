@@ -4,10 +4,11 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ClosedShape}
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, RunnableGraph, Sink, Source, Zip}
+import flow.GameFlow
 import logic.GameState
 import sink.GameStateSink
 import source.KeyboardSource.Key
-import source.{ClockSource, KeyboardSource}
+import source.{ClockSource, InitialGameStateSource, KeyboardSource}
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -19,19 +20,32 @@ object Main {
 
       val keyboardSource         = KeyboardSource.getKeyboardSource
       val clockSource            = ClockSource.getClockSource
-      //TODO: This probably should be merged with the output of the GameStateFlow
-      val initialGameStateSource = Source.single(GameState())
+      val initialGameStateSource = InitialGameStateSource.getInitialGameStateSource
 
       val gameStateSink = GameStateSink.getGameStateSink
 
       val mapToKeyFlow = Flow[(Unit, Option[Key])].map { case (_, key) => key }
+      val gameFlow     = GameFlow.getGameFlow
 
-      val synchronizationZip = builder.add(Zip[Unit, Option[Key]]())
+      val synchronizationZip  = builder.add(Zip[Unit, Option[Key]]())
+      val keyWithGameStateZip = builder.add(Zip[Option[Key], GameState]())
+      val gameStateMerge      = builder.add(Merge[GameState](2))
+      val gameStateBroadcast  = builder.add(Broadcast[GameState](2))
 
+      //The stochastic variable sources
       clockSource    ~> synchronizationZip.in0
       keyboardSource ~> synchronizationZip.in1
 
-      synchronizationZip.out ~> mapToKeyFlow ~> gameStateSink
+      //Zipping the input with the game clock
+      synchronizationZip.out ~> mapToKeyFlow ~> keyWithGameStateZip.in0
+      gameStateMerge         ~> keyWithGameStateZip.in1
+
+      //Merging the initial game state source with the broadcast with the previous game state
+      initialGameStateSource  ~> gameStateMerge.in(0)
+      gameStateBroadcast      ~> gameStateMerge.in(1)
+      keyWithGameStateZip.out ~> gameFlow ~> gameStateBroadcast
+
+      gameStateBroadcast ~> gameStateSink
 
       ClosedShape
     })
