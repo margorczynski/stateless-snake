@@ -14,9 +14,9 @@ object InitialGameStateSource {
   )
 
   //TODO: Generate an initial "random" state within the GameStateEngine?
-  private val initialFoodPosition = Position(10, 10)
-  private val initialSnake        = Snake(Seq(Position(20, 20), Position(20, 19)), Up)
+  private val initialFoodPosition = Position(25, 25)
+  private val initialSnake        = Snake(Seq(Position(40, 40), Position(40, 39)), Up)
   private val initialSeed         = System.currentTimeMillis()
 
-  private val mapSize = 100
+  private val mapSize = 50
 }
