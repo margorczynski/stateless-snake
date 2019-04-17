@@ -1,74 +1,46 @@
 package logic
 
-import source.KeyboardSource._
-import source.KeyboardSource.AlphanumericKey
+import logic.input._
+import logic.input.GameInput
 
 import scala.util.Random
 
 object GameStateEngine {
 
-  def calculate(keyPressed: Option[Key], previousGameState: GameState) = previousGameState match {
-    case Exited        => Exited
-    case Paused(state) => keyPressed match {
-      case Some(key) => key match {
-        case Space  => state
-        case Escape => Exited
-      }
-      case None => previousGameState
-    }
-    case Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize) => keyPressed match {
-      case Some(Space)        => Paused(Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize))
-      case Some(Escape)       => Exited
-      case directionKeyOption =>
-        if(ateItself(segmentPositions) || isOutOfBound(mapSize, segmentPositions)) {
-          Exited
-        } else {
-          val newSeed      = generateNewSeed(seed)
-          val newDirection = directionKeyOption match {
-            case Some(directionKey) => getNewDirection(direction, directionKey)
-            case None               => direction
-          }
-          val newSegmentPositions =  {
-            val afterEating       = getSnakePositionsAfterEating(foodPosition, segmentPositions)
-            val snakeHeadPosition = segmentPositions.head
+  def calculate(snakeGameInput: SnakeGameInput, previousGameState: GameState): GameState =
+    (implicitly[GameInput[SnakeGameInput]].handleInput(snakeGameInput) andThen handleGameLogic)(previousGameState)
 
-            val newHeadPosition = direction match {
-              case Up    => Position(snakeHeadPosition.x, snakeHeadPosition.y - 1)
-              case Down  => Position(snakeHeadPosition.x, snakeHeadPosition.y + 1)
-              case Left  => Position(snakeHeadPosition.x - 1, snakeHeadPosition.y)
-              case Right => Position(snakeHeadPosition.x + 1, snakeHeadPosition.y)
-            }
+  private def handleGameLogic(gameState: GameState): GameState = gameState match {
+    case Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize, clockTicks, lastClockTickMoved) =>
+      if(ateItself(segmentPositions) || isOutOfBound(mapSize, segmentPositions)) {
+        Exited
+      } else {
+        val newSeed               = generateNewSeed(seed)
+        val isPositionUpdated     = clockTicks != lastClockTickMoved
+        val newLastMovedClockTick = if(isPositionUpdated) clockTicks else lastClockTickMoved
+        val newSegmentPositions   =  {
+          val afterEating       = getSnakePositionsAfterEating(foodPosition, segmentPositions)
+          val snakeHeadPosition = segmentPositions.head
 
-            (newHeadPosition +: afterEating).init
-          }
-          val newFoodPosition = if(ateFood(foodPosition, segmentPositions)) {
-            getFirstViableFoodPosition(segmentPositions, seed, mapSize)
-          } else foodPosition
+          val newHeadPosition = if(isPositionUpdated) {
+              direction match {
+                case Up    => Position(snakeHeadPosition.x, snakeHeadPosition.y - 1)
+                case Down  => Position(snakeHeadPosition.x, snakeHeadPosition.y + 1)
+                case Left  => Position(snakeHeadPosition.x - 1, snakeHeadPosition.y)
+                case Right => Position(snakeHeadPosition.x + 1, snakeHeadPosition.y)
+              }
+          } else snakeHeadPosition
 
-          Running(newFoodPosition, Snake(newSegmentPositions, newDirection), newSeed, mapSize)
+          (newHeadPosition +: afterEating).init
         }
-    }
-  }
+        val newFoodPosition = if(ateFood(foodPosition, segmentPositions)) {
+          getFirstViableFoodPosition(segmentPositions, seed, mapSize)
+        } else foodPosition
 
-  //TODO: Can be remade if we encode which Direction type is the opposite of which and mapping
-  private def getNewDirection(currentDirection: Direction, keyPressed: Key): Direction = keyPressed match {
-    case KeyW => currentDirection match {
-      case Down => Down
-      case _    => Up
-    }
-    case KeyS => currentDirection match {
-      case Up => Up
-      case _  => Down
-    }
-    case KeyA => currentDirection match {
-      case Right => Right
-      case _     => Left
-    }
-    case KeyD => currentDirection match {
-      case Left => Left
-      case _    => Right
-    }
-    case _    => currentDirection
+        Running(newFoodPosition, Snake(newSegmentPositions, direction), newSeed, mapSize, clockTicks, newLastMovedClockTick)
+      }
+    case _ =>
+      gameState
   }
 
   private def getSnakePositionsAfterEating(foodPosition: Position, segmentPositions: Seq[Position]): Seq[Position] = {

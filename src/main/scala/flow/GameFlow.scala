@@ -2,13 +2,14 @@ package flow
 
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
+import logic.input.SnakeGameInput
 import logic.{GameState, GameStateEngine}
-import source.KeyboardSource.Key
 
 object GameFlow {
-  type GameFlowInput = (Option[Key], GameState)
 
-  def getGameFlow: Flow[(Option[Key], GameState), GameState, NotUsed] = {
+  type GameFlowInput = (SnakeGameInput, GameState)
+
+  def getGameFlow: Flow[GameFlowInput, GameState, NotUsed] = {
     Flow.fromFunction(flowCalculate)
   }
 

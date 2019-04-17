@@ -9,7 +9,7 @@ object GameStateSink {
   private lazy val ansiState = Ansi.ansi()
 
   private def handleGameState(gameState: GameState): Unit = gameState match {
-    case Running(foodPosition, snake, _, _) =>
+    case Running(foodPosition, snake, _, _, _, _) =>
       drawRunningGameState(foodPosition, snake.segmentPositions)
     case Paused(stateBeforePause) =>
       handleGameState(stateBeforePause)

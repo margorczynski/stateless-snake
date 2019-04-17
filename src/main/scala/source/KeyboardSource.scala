@@ -3,29 +3,22 @@ package source
 import java.io.{BufferedReader, InputStreamReader}
 
 import akka.NotUsed
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Flow, Source}
+import logic.input._
 
 object KeyboardSource {
 
-  sealed trait Key { val asciiCode: Int }
-    sealed trait AlphanumericKey extends Key
-      case object  KeyW  extends AlphanumericKey { val asciiCode = 119 }
-      case object  KeyS  extends AlphanumericKey { val asciiCode = 115 }
-      case object  KeyA  extends AlphanumericKey { val asciiCode = 97 }
-      case object  KeyD  extends AlphanumericKey { val asciiCode = 100 }
-    sealed trait ModifierKey extends Key
-      case object Space  extends ModifierKey { val asciiCode = 32 }
-      case object Escape extends ModifierKey { val asciiCode = 27 }
-
-
-  def getKeyboardSource: Source[Option[Key], NotUsed] = {
+  def getKeyboardSource: Source[KeyboardInput, NotUsed] = {
     val consoleReader = new BufferedReader(new InputStreamReader(System.in, "UTF-8"))
 
     def currentlyPressedKey = if(consoleReader.ready()) Some(consoleReader.read()) else None
 
     Source.fromIterator( () =>
       Iterator.continually(currentlyPressedKey.map(getKey))
-    )
+    ).via(Flow[Option[Key]].collect {
+      case Some(key) =>
+        KeyboardInput(key)
+    })
   }
 
   private def getKey(asciiCode: Int) = asciiCode match {

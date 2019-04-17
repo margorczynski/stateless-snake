@@ -10,7 +10,9 @@ object InitialGameStateSource {
       foodPosition = initialFoodPosition,
       snake = initialSnake,
       seed = initialSeed,
-      mapSize)
+      mapSize = mapSize,
+      clockTicks = 0,
+      lastClockTickMoved = 0)
   )
 
   //TODO: Generate an initial "random" state within the GameStateEngine?
