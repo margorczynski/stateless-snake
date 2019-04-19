@@ -1,0 +1,15 @@
+<configuration>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender" additivity="false">
+        <file>log/gameFlowOutput.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="debug">
+        <appender-ref ref="FILE" />
+    </root>
+
+</configuration>

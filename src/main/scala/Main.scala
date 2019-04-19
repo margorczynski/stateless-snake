@@ -16,13 +16,15 @@ object Main {
     val gameGraph = RunnableGraph.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
       import GraphDSL.Implicits._
 
-      val keyboardSource         = KeyboardSource.getKeyboardSource
-      val clockSource            = ClockSource.getClockSource
-      val initialGameStateSource = InitialGameStateSource.getInitialGameStateSource
+      //Log the elements coming out of the Sources
+      val keyboardSource         = KeyboardSource.getKeyboardSource.log("keyboard-source-log")
+      val clockSource            = ClockSource.getClockSource.log("clock-source-log")
+      val initialGameStateSource = InitialGameStateSource.getInitialGameStateSource.log("initial-game-state-source-log")
 
       val gameStateSink = GameStateSink.getGameStateSink
 
-      val gameFlow = GameFlow.getGameFlow
+      //Log the elements coming out of the Game Flow
+      val gameFlow = GameFlow.getGameFlow.log("game-flow-log")
 
       val inputWithGameStateZip = builder.add(Zip[SnakeGameInput, GameState]())
       val gameInputMerge        = builder.add(Merge[SnakeGameInput](2))
@@ -37,9 +39,9 @@ object Main {
       gameStateMerge ~> inputWithGameStateZip.in1
 
       //Merging the initial game state source with the broadcast with the previous game state
-      initialGameStateSource  ~> gameStateMerge.in(0)
-      gameStateBroadcast      ~> gameStateMerge.in(1)
-      inputWithGameStateZip.out ~> gameFlow ~> gameStateBroadcast
+      initialGameStateSource    ~> gameStateMerge.in(0)
+      gameStateBroadcast        ~> gameStateMerge.in(1)
+      inputWithGameStateZip.out ~> gameFlow             ~> gameStateBroadcast
 
       gameStateBroadcast ~> gameStateSink
 
