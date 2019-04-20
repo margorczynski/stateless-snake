@@ -26,9 +26,15 @@ object SnakeGameInput {
             case Paused(state) => key match {
               case Space  => state
               case Escape => Exited
+              case _      => gameState
             }
             case gsr @ Running(_, snake, _, _, _, _) =>
-              gsr.copy(snake = snake.copy(direction = getNewDirection(snake.direction, key)))
+              key match {
+                case Space  => Paused(gsr)
+                case Escape => Exited
+                case _      =>
+                  gsr.copy(snake = snake.copy(direction = getNewDirection(snake.direction, key)))
+              }
           }
       }
     }

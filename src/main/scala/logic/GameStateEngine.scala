@@ -18,21 +18,22 @@ object GameStateEngine {
         val newSeed               = generateNewSeed(seed)
         val isPositionUpdated     = clockTicks != lastClockTickMoved
         val newLastMovedClockTick = if(isPositionUpdated) clockTicks else lastClockTickMoved
-        val newSegmentPositions   =  {
+        val newSegmentPositions   = if(isPositionUpdated) {
           val afterEating       = getSnakePositionsAfterEating(foodPosition, segmentPositions)
           val snakeHeadPosition = segmentPositions.head
 
-          val newHeadPosition = if(isPositionUpdated) {
+          val newHeadPosition = {
               direction match {
                 case Up    => Position(snakeHeadPosition.x, snakeHeadPosition.y - 1)
                 case Down  => Position(snakeHeadPosition.x, snakeHeadPosition.y + 1)
                 case Left  => Position(snakeHeadPosition.x - 1, snakeHeadPosition.y)
                 case Right => Position(snakeHeadPosition.x + 1, snakeHeadPosition.y)
               }
-          } else snakeHeadPosition
+          }
 
           (newHeadPosition +: afterEating).init
-        }
+        } else segmentPositions
+
         val newFoodPosition = if(ateFood(foodPosition, segmentPositions)) {
           getFirstViableFoodPosition(segmentPositions, seed, mapSize)
         } else foodPosition
@@ -65,11 +66,14 @@ object GameStateEngine {
     segmentPositions.head.y < 0 ||
     segmentPositions.head.y >= mapSize
 
-  private def ateFood(foodPosition: Position, segmentPositions: Seq[Position]) = foodPosition == segmentPositions.head
+  private def ateFood(foodPosition: Position, segmentPositions: Seq[Position]) =
+    foodPosition == segmentPositions.head
 
-  private def ateItself(snakePosition: Seq[Position]) = snakePosition.tail.contains(snakePosition.head)
+  private def ateItself(snakePosition: Seq[Position]) =
+    snakePosition.tail.contains(snakePosition.head)
 
-  private def generateNewSeed(oldSeed: Long) = (oldSeed * 2) % seedBound
+  private def generateNewSeed(oldSeed: Long) =
+    (oldSeed * 2) % seedBound
 
   private val seedBound = 12345L
 }
