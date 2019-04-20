@@ -13,7 +13,7 @@ object GameStateSink {
       drawRunningGameState(foodPosition, snake.segmentPositions)
     case Paused(stateBeforePause) =>
       handleGameState(stateBeforePause)
-    case Exited =>
+    case Exited(_) =>
   }
 
   private def drawRunningGameState(foodPosition: Position, snakeSegmentPositions: Seq[Position]): Unit = {

@@ -21,17 +21,17 @@ object SnakeGameInput {
 
         case KeyboardInput(key) =>
           gameState match {
-            case Exited =>
-              Exited
+            case Exited(_) =>
+              gameState
             case Paused(state) => key match {
               case Space  => state
-              case Escape => Exited
+              case Escape => Exited(EscapePressed)
               case _      => gameState
             }
             case gsr @ Running(_, snake, _, _, _, _) =>
               key match {
                 case Space  => Paused(gsr)
-                case Escape => Exited
+                case Escape => Exited(EscapePressed)
                 case _      =>
                   gsr.copy(snake = snake.copy(direction = getNewDirection(snake.direction, key)))
               }

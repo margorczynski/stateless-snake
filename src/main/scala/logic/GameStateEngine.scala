@@ -12,8 +12,10 @@ object GameStateEngine {
 
   private def handleGameLogic(gameState: GameState): GameState = gameState match {
     case Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize, clockTicks, lastClockTickMoved) =>
-      if(ateItself(segmentPositions) || isOutOfBound(mapSize, segmentPositions)) {
-        Exited
+      if(ateItself(segmentPositions)) {
+        Exited(AteItself)
+      } else if (isOutOfBound(mapSize, segmentPositions)) {
+        Exited(OutOfBounds)
       } else {
         val newSeed               = generateNewSeed(seed)
         val isPositionUpdated     = clockTicks != lastClockTickMoved
