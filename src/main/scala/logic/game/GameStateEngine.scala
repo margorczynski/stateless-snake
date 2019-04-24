@@ -1,7 +1,6 @@
-package logic
+package logic.game
 
-import logic.input._
-import logic.input.GameInput
+import logic.input.{GameInput, _}
 
 import scala.util.Random
 
@@ -11,36 +10,17 @@ object GameStateEngine {
     (implicitly[GameInput[SnakeGameInput]].handleInput(snakeGameInput) andThen handleGameLogic)(previousGameState)
 
   private def handleGameLogic(gameState: GameState): GameState = gameState match {
-    case Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize, clockTicks, lastClockTickMoved) =>
+    case Running(foodPosition, Snake(segmentPositions, direction), seed, mapSize, snakeMovementTimer) =>
       if(ateItself(segmentPositions)) {
         Exited(AteItself)
       } else if (isOutOfBound(mapSize, segmentPositions)) {
         Exited(OutOfBounds)
       } else {
-        val newSeed               = generateNewSeed(seed)
-        val isPositionUpdated     = clockTicks != lastClockTickMoved
-        val newLastMovedClockTick = if(isPositionUpdated) clockTicks else lastClockTickMoved
-        val newSegmentPositions   = if(isPositionUpdated) {
-          val afterEating       = getSnakePositionsAfterEating(foodPosition, segmentPositions)
-          val snakeHeadPosition = segmentPositions.head
+        val newSeed             = generateNewSeed(seed)
+        val newSegmentPositions = getSnakePositionsAfterEating(foodPosition, segmentPositions)
+        val newFoodPosition     = getNewFoodPosition(foodPosition, segmentPositions, seed, mapSize)
 
-          val newHeadPosition = {
-              direction match {
-                case Up    => Position(snakeHeadPosition.x, snakeHeadPosition.y - 1)
-                case Down  => Position(snakeHeadPosition.x, snakeHeadPosition.y + 1)
-                case Left  => Position(snakeHeadPosition.x - 1, snakeHeadPosition.y)
-                case Right => Position(snakeHeadPosition.x + 1, snakeHeadPosition.y)
-              }
-          }
-
-          (newHeadPosition +: afterEating).init
-        } else segmentPositions
-
-        val newFoodPosition = if(ateFood(foodPosition, segmentPositions)) {
-          getFirstViableFoodPosition(segmentPositions, seed, mapSize)
-        } else foodPosition
-
-        Running(newFoodPosition, Snake(newSegmentPositions, direction), newSeed, mapSize, clockTicks, newLastMovedClockTick)
+        Running(newFoodPosition, Snake(newSegmentPositions, direction), newSeed, mapSize, snakeMovementTimer)
       }
     case _ =>
       gameState
@@ -52,10 +32,17 @@ object GameStateEngine {
     } else segmentPositions
   }
 
+  private def getNewFoodPosition(foodPosition: Position, segmentPositions: Seq[Position], seed: Long, mapSize: Int) ={
+    if(ateFood(foodPosition, segmentPositions)) {
+      getFirstViableFoodPosition(segmentPositions, seed, mapSize)
+    } else foodPosition
+  }
+
   private def getFirstViableFoodPosition(segmentPositions: Seq[Position], seed: Long, mapSize: Int): Position = {
     val generator   = new Random(seed)
     val newPosition = Position(generator.nextInt(mapSize), generator.nextInt(mapSize))
 
+    // If the generated new food position is taken by the snake find a new one using a different seed
     if(segmentPositions.contains(newPosition))
       getFirstViableFoodPosition(segmentPositions, seed / 2, mapSize)
     else

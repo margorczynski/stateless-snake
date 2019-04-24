@@ -1,4 +1,4 @@
-package logic
+package logic.game
 
 sealed trait ExitReason
 case object EscapePressed extends ExitReason

@@ -3,7 +3,7 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ClosedShape}
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, RunnableGraph, Sink, Source, Zip}
 import flow.GameFlow
-import logic.GameState
+import logic.game.GameState
 import logic.input.SnakeGameInput
 import sink.GameStateSink
 import source.{ClockSource, InitialGameStateSource, KeyboardSource}

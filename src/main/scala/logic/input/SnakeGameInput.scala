@@ -1,5 +1,6 @@
 package logic.input
-import logic._
+import logic.{game, _}
+import logic.game._
 
 sealed trait SnakeGameInput
   case class  KeyboardInput(key: Key) extends SnakeGameInput
@@ -13,8 +14,10 @@ object SnakeGameInput {
 
         case ClockInput =>
           gameState match {
-            case gsr @ Running(_, _, _, _, clockTicks, _) =>
-              gsr.copy(clockTicks = clockTicks + 1)
+            case gsr @ Running(_, _, _, _, snakeMovementTimer) =>
+              if(snakeMovementTimer.tickCount == 0) {
+                snakeMovementTimer.callback(gsr)
+              } else gsr.copy(snakeMovementTimer = snakeMovementTimer.copy(tickCount = snakeMovementTimer.tickCount - 1))
             case _ =>
               gameState
           }
@@ -28,7 +31,7 @@ object SnakeGameInput {
               case Escape => Exited(EscapePressed)
               case _      => gameState
             }
-            case gsr @ Running(_, snake, _, _, _, _) =>
+            case gsr @ Running(_, snake, _, _, _) =>
               key match {
                 case Space  => Paused(gsr)
                 case Escape => Exited(EscapePressed)
@@ -49,12 +52,12 @@ object SnakeGameInput {
       case _  => Down
     }
     case KeyA => currentDirection match {
-      case Right => Right
-      case _     => Left
+      case game.Right => game.Right
+      case _     => game.Left
     }
     case KeyD => currentDirection match {
-      case Left => Left
-      case _    => Right
+      case game.Left => game.Left
+      case _    => game.Right
     }
     case _    => currentDirection
   }

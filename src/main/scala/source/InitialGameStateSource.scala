@@ -3,6 +3,7 @@ package source
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import logic._
+import logic.game._
 
 object InitialGameStateSource {
   def getInitialGameStateSource: Source[GameState, NotUsed] = Source.single(
@@ -11,8 +12,7 @@ object InitialGameStateSource {
       snake = initialSnake,
       seed = initialSeed,
       mapSize = mapSize,
-      clockTicks = 0,
-      lastClockTickMoved = 0)
+      snakeMovementTimer = SnakeMovementTimer())
   )
 
   //TODO: Generate an initial "random" state within the GameStateEngine?

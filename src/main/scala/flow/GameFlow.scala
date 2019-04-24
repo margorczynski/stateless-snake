@@ -3,7 +3,7 @@ package flow
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
 import logic.input.SnakeGameInput
-import logic.{GameState, GameStateEngine}
+import logic.game.{GameState, GameStateEngine}
 
 object GameFlow {
 

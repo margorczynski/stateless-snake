@@ -1,4 +1,4 @@
-package logic
+package logic.game
 
 sealed trait Direction
 case object Up    extends Direction
